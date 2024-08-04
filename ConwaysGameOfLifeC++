@@ -1,0 +1,124 @@
+#include <SFML/Graphics.hpp>
+#include <iostream>
+#include <Windows.h>
+
+const int cell_size = 50;
+const int board_size = 20;
+int board[board_size][board_size] = { 0 };
+int temp_board[board_size][board_size] = { 0 };
+
+// Create a grid square for drawing
+sf::RectangleShape create_grid(int x, int y) {
+    sf::RectangleShape square(sf::Vector2f(cell_size, cell_size));
+    square.setFillColor(sf::Color::Transparent); // Set fill color to transparent
+    square.setOutlineColor(sf::Color::Transparent);    // Set outline color
+    square.setOutlineThickness(1.0f);            // Set outline thickness
+    square.setPosition(x, y);
+    return square;
+}
+
+// Count all 8 neighbors
+int count_neighbors(int board[board_size][board_size], int x, int y) {
+    int no = 0;
+    // Check all 8 neighboring cells
+    for (int i = x - 1; i <= x + 1; ++i) {
+        for (int j = y - 1; j <= y + 1; ++j) {
+            // Skip the center cell and out-of-bounds indices
+            if ((i == x && j == y) || i < 0 || j < 0 || i >= board_size || j >= board_size) {
+                continue;
+            }
+            // Count the neighbor if it's alive
+            if (board[i][j] == 1) {
+                no++;
+            }
+        }
+    }
+    return no;
+}
+
+// Update the board based on the Game of Life rules
+void update(int board[board_size][board_size], int temp_board[board_size][board_size]) {
+    for (int i = 0; i < board_size; ++i) {
+        for (int j = 0; j < board_size; ++j) {
+            int total_n = count_neighbors(board, i, j);
+            if (board[i][j] == 1) {
+                if (total_n < 2 || total_n > 3) {
+                    temp_board[i][j] = 0; // Cell dies
+                }
+                else {
+                    temp_board[i][j] = 1; // Cell remains alive
+                }
+            }
+            else {
+                if (total_n == 3) {
+                    temp_board[i][j] = 1; // Cell becomes alive
+                }
+            }
+        }
+    }
+
+    // Copy next state to board
+    for (int i = 0; i < board_size; ++i) {
+        for (int j = 0; j < board_size; ++j) {
+            board[i][j] = temp_board[i][j];
+        }
+    }
+}
+
+int main() {
+    bool mouse_pressed = false;
+    sf::RenderWindow window(sf::VideoMode(1000, 1000), "Conway's Game of Life");
+
+    while (window.isOpen()) {
+        sf::Event evnt;
+        while (window.pollEvent(evnt)) {
+            if (evnt.type == sf::Event::Closed) {
+                window.close();
+            }
+            else if (evnt.type == sf::Event::MouseButtonPressed) {
+                mouse_pressed = true;
+            }
+            else if (evnt.type == sf::Event::MouseButtonReleased) {
+                mouse_pressed = false;
+            }
+        }
+
+        sf::Vector2i MousePos = sf::Mouse::getPosition(window);
+
+        // Clear the window
+        window.clear();
+
+        if (mouse_pressed) {
+            int gridx = MousePos.x / cell_size;
+            int gridy = MousePos.y / cell_size;
+            if (gridx >= 0 && gridx < board_size && gridy >= 0 && gridy < board_size) {
+                board[gridx][gridy] = 1;
+            }
+        }
+
+        // Draw grid of squares
+        for (int i = 0; i < board_size; ++i) {
+            for (int u = 0; u < board_size; ++u) {
+                sf::RectangleShape square = create_grid(i * cell_size, u * cell_size);
+                if (board[i][u] == 1) {
+                    square.setFillColor(sf::Color::White);
+                }
+                else {
+                    square.setFillColor(sf::Color::Transparent);
+                }
+                window.draw(square);
+            }
+        }
+
+        // Update the board if Enter key is pressed
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
+            update(board, temp_board);
+            Sleep(100);
+        }
+
+        // Display the contents of the window
+        window.display();
+    }
+
+    return 0;
+}
